@@ -47,7 +47,7 @@ pipeline {
         }
         stage('Deleting docker image locally') {
             steps{
-                sh 'docker image rm paulvosk/jenkins-image:0.1 && docker image rm python'
+                sh 'docker image rm paulvosk/jenkins-image:0.1'
             }
         }      
     }
