@@ -1,0 +1,54 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Docker version') {
+            steps {
+                echo '$USER'
+                sh 'docker version'
+            }
+        }
+        stage('Delete workspace before building starts') {
+            steps {
+                echo 'Deleting workspace'
+                deleteDir()
+            }
+        }
+        stage('Checking github availability') {
+            steps {
+                git branch: 'main',
+                    url: 'https://github.com/paulcicd/dockerbuild.git'
+                echo 'GitHub repo is available'
+                }
+        }
+        stage('Test') {
+            steps {
+                dir('script') {
+                    sh "ls -la"
+                    sh "pwd"
+                }
+                    sh "ls -la"
+                    sh "pwd"
+            }
+        }
+        stage('Build docker image') {
+            steps{
+                dir('.') {
+                    sh 'docker build -t paulvosk/jenkins-image:0.1 .'
+                }
+            }
+        }
+        stage('Push docker image to DockerHub') {
+            steps{
+                withDockerRegistry(credentialsId: 'dockerhub-cred-paulvosk', url: 'https://index.docker.io/v1/') {
+                    sh '''docker push paulvosk/jenkins-image:0.1'''
+                }
+            }
+        }
+        stage('Deleting docker image locally') {
+            steps{
+                sh 'docker image rm paulvosk/jenkins-image:0.1'
+            }
+        }      
+    }
+}
