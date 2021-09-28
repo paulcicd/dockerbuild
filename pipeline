@@ -2,6 +2,64 @@
 pipeline {
     agent any
 
+    parametrs {
+        choice choices: ['BRANCH', 'TAG', 'BRANCH_and_TAG', 'REVISION', 'PULL_REQUEST'], description:  '', name: 'TYPE'
+        gitParametr (   branch: '',
+                        branchFilter: '.*',
+                        defaultValue: 'main',
+                        description: '',
+                        name: 'BRANCH',
+                        quickFilterEnabled: true,
+                        selectedValue: 'NONE',
+                        sortMode: 'NONE',
+                        tagFilter: '*',
+                        type: 'PT_BRANCH',
+                        useRepository: git@github.com:paulcicd/dockerbuild.git)
+        gitParametr (   branch: '',
+                        branchFilter: '.*',
+                        defaultValue: 'main',
+                        description: '',
+                        name: 'TAG',
+                        quickFilterEnabled: true,
+                        selectedValue: 'NONE',
+                        sortMode: 'NONE',
+                        tagFilter: '*',
+                        type: 'PT_TAG',
+                        useRepository: git@github.com:paulcicd/dockerbuild.git)
+        gitParametr (   branch: '',
+                        branchFilter: '.*',
+                        defaultValue: 'main',
+                        description: '',
+                        name: 'BRANCH_and_TAG',
+                        quickFilterEnabled: true,
+                        selectedValue: 'NONE',
+                        sortMode: 'NONE',
+                        tagFilter: '*',
+                        type: 'PT_BRANCH_TAG',
+                        useRepository: git@github.com:paulcicd/dockerbuild.git)
+        gitParametr (   branch: '',
+                        branchFilter: '.*',
+                        defaultValue: 'main',
+                        description: '',
+                        name: 'REVISION',
+                        quickFilterEnabled: true,
+                        selectedValue: 'NONE',
+                        sortMode: 'NONE',
+                        tagFilter: '*',
+                        type: 'PT_REVISION',
+                        useRepository: git@github.com:paulcicd/dockerbuild.git)
+        gitParametr (   branch: '',
+                        branchFilter: '.*',
+                        defaultValue: 'main',
+                        description: '',
+                        name: 'PULL_REQUEST',
+                        quickFilterEnabled: true,
+                        selectedValue: 'NONE',
+                        sortMode: 'NONE',
+                        tagFilter: '*',
+                        type: 'PT_PULL_REQUEST',
+                        useRepository: git@github.com:paulcicd/dockerbuild.git)
+
     stages {
         stage('Docker version') {
             steps {
@@ -9,7 +67,120 @@ pipeline {
                 sh 'docker version'
             }
         }
-        stage('Delete workspace before building starts') {
+        stage('Checked environmental variables print') {
+            steps {
+                sh '''
+                echo Selected Type of Checkout: $TYPE
+                echo Selected Branch Name: $NAME
+                echo Selected Tag name: $TAG
+                echo Selected Branch or Tag name: $BRANCH_and_TAG
+                echo Selected Revision name: $REVISION
+                echo Selected Pull Request name: $PULL_REQUEST
+                '''
+            }
+        }
+        stage('Checkout') {
+            parallel {
+                stage('BRANCH') {
+                    when {
+                        expression {
+                            params.TYPE == 'BRANCH'
+                        }
+                    }
+                    steps{
+                        checkout(
+                            [$class: 'GitSCM',
+                            branches: [[name: "${params.BRANCH}"]]
+                            doGenerateSubmoduleConfigurations: false,
+                            extensions: [],
+                            submoduleCfg: [], userRemoteConfigs: 
+                            [[credentialsId: 'git_course_cicd', 
+                            url: 'git@github.com:paulcicd/dockerbuild.git']]]
+                        )
+                    }
+                }
+                stage('TAG') {
+                    when {
+                        expression {
+                            params.TYPE == 'TAG'
+                        }
+                    }
+                    steps {
+                        checkout(
+                            [$class: 'GitSCM',
+                            branches: [[name: "${params.TAG}"]]
+                            doGenerateSubmoduleConfigurations: false,
+                            extensions: [],
+                            submoduleCfg: [], userRemoteConfigs:
+                            [[credentialsId: 'git_course_cicd',
+                            url: 'git@github.com:paulcicd/dockerbuild.git']]]
+                        )
+                    }
+                }
+                stage('BRANCH_and_TAG') {
+                    when {
+                        expression {
+                            params.TYPE == 'BRANCH_and_TAG'
+                        }
+                    }
+                    steps {
+                        checkout(
+                            [$class: 'GitSCM',
+                            branches: [[name: "${params.BRANCH_and_TAG}"]]
+                            doGenerateSubmoduleConfigurations: false,
+                            extensions: [],
+                            submoduleCfg: [], userRemoteConfigs:
+                            [[credentialsId: 'git_course_cicd',
+                            url: 'git@github.com:paulcicd/dockerbuild.git']]]
+                        )
+                    }
+                }
+                stage('REVISION') {
+                    when {
+                        expression {
+                            params.TYPE == 'REVISION'
+                        }
+                    }
+                    steps {
+                        checkout(
+                            [$class: 'GitSCM',
+                            branches: [[name: "${params.REVISION}"]]
+                            doGenerateSubmoduleConfigurations: false,
+                            extensions: [],
+                            submoduleCfg: [], userRemoteConfigs:
+                            [[credentialsId: 'git_course_cicd',
+                            url: 'git@github.com:paulcicd/dockerbuild.git']]]
+                        )
+                    }
+                }
+                stage('PULL_REQUEST') {
+                    when {
+                        expression {
+                            params.TYPE == 'PULL_REQUEST'
+                        }
+                    }
+                    steps {
+                        checkout(
+                            [$class: 'GitSCM',
+                            branches: [[name: "pr/${params.PULL_REQUEST}/head"]]
+                            doGenerateSubmoduleConfigurations: false,
+                            extensions: [],
+                            submoduleCfg: [], userRemoteConfigs:
+                            [[credentialsId: 'git_course_cicd',
+                            refspec: '+refs/pull/*:refs/remotes/origin/pr/*',   
+                            url: 'git@github.com:paulcicd/dockerbuild.git']]]
+                        )
+                    }
+                }
+            }
+        }
+        stage('Show workdir') {
+            steps {
+                sh 'ls -la'
+            }
+        }
+
+        /*stage('Delete workspace before building starts') {
             steps {
                 echo 'Deleting workspace'
                 deleteDir()
@@ -50,6 +221,6 @@ pipeline {
             steps{
                 sh 'docker image rm paulvosk/jenkins-image:0.1'
             }
-        }      
+        }*/      
     }
 }
